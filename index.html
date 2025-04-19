@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Client</title>
+</head>
+<body>
+
+<script>
+  class CustomWebSocket extends WebSocket {
+    constructor(url, protocols) {
+      super(url, protocols);
+      this.addEventListener('error', (event) => {
+        console.error('WebSocket Error:', event);
+      });
+    }
+  }
+
+  const ws = new CustomWebSocket('wss://localhost:8443/ws');
+
+  ws.addEventListener('open', (event) => {
+    console.log('Connected to WebSocket Server');
+    ws.send('Hello, server!');
+  });
+
+  ws.addEventListener('message', (event) => {
+    console.log(`Received: ${event.data}`);
+  });
+
+  ws.addEventListener('close', (event) => {
+    console.log('Connection closed');
+  });
+</script>
+
+</body>
+</html>
