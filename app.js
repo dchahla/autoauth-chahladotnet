@@ -35,9 +35,9 @@ server.on('connection', socket => {
     socket.close()
     return
   }
-  setInterval(() => {
-    socket.send(JSON.stringify({ type: 'new_count' }))
-  }, 15000)
+  // setInterval(() => {
+  //   socket.send(JSON.stringify({ type: 'new_count' }))
+  // }, 15000)
 
   setTimeout(() => {
     s = socket
@@ -45,12 +45,12 @@ server.on('connection', socket => {
   socket.on('message', async message => {
     const data = JSON.parse(message)
     if (data.type === 'authentication') {
-	// console.log(data.data)
+  // console.log(data.data)
       // Validate the unique identifier (you can customize this logic)
       const isValid = await validateIdentifier(data.data)
       const now = new Date().getTime().toString()
       await redis.set(`auth:${isValid}`, now)
-      await redis.expire(`auth:${isValid}`, 1800)
+      await redis.expire(`auth:${isValid}`, 60)
 
       // console.log(isValid)
       if (isValid) {
@@ -284,6 +284,22 @@ function splitAndCalculate (timestamp) {
 }
 const http = require('http')
 const endpoints = ['/user/api/auto', '/user/api/create']
+/**
+ * Attach the minimum headers the browser looks for during a CORS check.
+ * @param {http.ServerResponse} res – the Node response object
+ * @param {string} origin – which origin to allow (defaults to "*")
+ */
+function addCors(res, origin = '*') {
+  res.setHeader('Access-Control-Allow-Origin', origin);          // who may access
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization'
+  );
+  // optional: let the browser cache the pre‑flight for a day
+  res.setHeader('Access-Control-Max-Age', '86400');
+}
+
 const exserver = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS' && endpoints.includes(req.url)) {
     // Respond to the preflight request
@@ -321,20 +337,16 @@ const exserver = http.createServer(async (req, res) => {
             await redis.set(`auth:${uid}`, now)
             await redis.expire(`auth:${uid}`, 1800)
             // console.log(token)
-            res.writeHead(200, {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': process.env.ACAO // Adjust as needed
-            })
+            addCors(res);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             token.core = 'chahlanet'
             token.resource = 'firebaseio.com'
             // Convert the response data to JSON and send it
             res.end(JSON.stringify(token))
           } else {
             // Handle failed authentication
-            res.writeHead(200, {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': process.env.ACAO // Adjust as needed
-            })
+            addCors(res);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
 
             // Convert the response data to JSON and send it
             res.end(JSON.stringify({ type: 'authentication_failed' }))
